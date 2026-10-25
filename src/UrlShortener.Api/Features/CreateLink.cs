@@ -1,6 +1,8 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Data.Sqlite;
 using UrlShortener.Api.Shared;
 
 namespace UrlShortener.Api.Features;
@@ -9,7 +11,7 @@ public static class CreateLink
 {
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     public sealed record Request(
-        [property: JsonRequired] string? Destination,
+        [property: JsonRequired] string Destination,
         string? Code = null,
         [property: JsonConverter(typeof(UtcDateTimeOffsetConverter))] DateTimeOffset? ExpiresAtUtc = null);
     internal enum Status { Created, Invalid, Conflict, Unavailable }
@@ -27,7 +29,49 @@ public static class CreateLink
             return "A expiração deve ser um instante futuro em UTC.";
         return null;
     }
-    internal static Outcome Handle(Request request, SqliteConnectionFactory factory, TimeProvider clock, Func<string>? generate = null) => throw new NotImplementedException();
+    internal static Outcome Handle(Request request, SqliteConnectionFactory factory, TimeProvider clock, Func<string>? generate = null)
+    {
+        var error = Validate(request, clock);
+        if (error is not null)
+            return new(Status.Invalid, Error: error);
+        generate ??= GenerateCode;
+        try
+        {
+            using var connection = factory.OpenConnection();
+            using var command = connection.CreateCommand();
+            command.CommandText = "INSERT INTO links(code, destination, expires_at_utc, access_count) VALUES ($code, $destination, $expires, 0)";
+            var codeParameter = command.Parameters.AddWithValue("$code", "");
+            command.Parameters.AddWithValue("$destination", request.Destination);
+            command.Parameters.AddWithValue("$expires", (object?)request.ExpiresAtUtc?.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture) ?? DBNull.Value);
+            for (var attempt = 0; attempt < (request.Code is null ? 32 : 1); attempt++)
+            {
+                var code = request.Code ?? generate();
+                codeParameter.Value = code;
+                try
+                {
+                    command.ExecuteNonQuery();
+                    return new(Status.Created, code);
+                }
+                catch (SqliteException exception) when (exception.SqliteErrorCode == 19 && exception.SqliteExtendedErrorCode is 1555 or 2067)
+                {
+                    if (request.Code is not null)
+                        return new(Status.Conflict, Error: "O código personalizado já existe.");
+                }
+            }
+            return new(Status.Unavailable, Error: "Não foi possível gerar um código único.");
+        }
+        catch (SqliteException)
+        {
+            return new(Status.Unavailable, Error: "A base de dados está temporariamente indisponível.");
+        }
+    }
+
+    private static string GenerateCode() => string.Create(7, 0, static (characters, _) =>
+    {
+        const string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        for (var i = 0; i < characters.Length; i++)
+            characters[i] = alphabet[RandomNumberGenerator.GetInt32(alphabet.Length)];
+    });
 
     public sealed class UtcDateTimeOffsetConverter : JsonConverter<DateTimeOffset>
     {

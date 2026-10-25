@@ -82,7 +82,7 @@ validações, duplicados, distinção por maiúsculas e o 11.º pedido, sem depe
 ### Implementação da História de Utilizador 1
 
 - [x] T010 [P] [US1] Implementar contratos e validação em `src/UrlShortener.Api/Features/CreateLink.cs`: destino obrigatório, absoluto, `http`/`https` e 1–2048 caracteres; código opcional ASCII alfanumérico de 4–20 caracteres sem normalização; expiração opcional futura em UTC; erros `400` compreensíveis sem escrita (depende de T009).
-- [ ] T011 [US1] Implementar o handler e SQL parametrizado em `src/UrlShortener.Api/Features/CreateLink.cs`: gerar 7 caracteres com `RandomNumberGenerator.GetInt32`, permitindo substituição local do gerador nos testes de colisão sem estado global nem endpoint de teste; inserir `access_count=0`, usar `expires_at_utc` no formato `yyyy-MM-ddTHH:mm:ss.fffffffZ`, resolver colisões automáticas em até 32 tentativas, devolver `409` para código personalizado duplicado e `503` após esgotar tentativas ou perante indisponibilidade (depende de T010).
+- [x] T011 [US1] Implementar o handler e SQL parametrizado em `src/UrlShortener.Api/Features/CreateLink.cs`: gerar 7 caracteres com `RandomNumberGenerator.GetInt32`, permitindo substituição local do gerador nos testes de colisão sem estado global nem endpoint de teste; inserir `access_count=0`, usar `expires_at_utc` no formato `yyyy-MM-ddTHH:mm:ss.fffffffZ`, resolver colisões automáticas em até 32 tentativas, devolver `409` para código personalizado duplicado e `503` após esgotar tentativas ou perante indisponibilidade (depende de T010).
 - [ ] T012 [US1] Implementar `POST /links` em `src/UrlShortener.Api/Features/CreateLink.cs` com delegação no handler local, resposta `201` contendo `code`, `shortUrl`, `destination` e `expiresAtUtc`, cabeçalho `Location` para estatísticas, `RequireRateLimiting("create-links")` e metadados OpenAPI de `201`, `400`, `409`, `429` e `503` (depende de T011).
 - [ ] T013 [US1] Registar o mapeamento de `CreateLink` em `src/UrlShortener.Api/Program.cs` e executar os testes de `src/UrlShortener.Api.Tests/CreateLinkTests.cs` até todos passarem (depende de T012).
 
@@ -227,3 +227,5 @@ Executar T023 separadamente das outras verificações para medir desempenho sem 
 - **T009**: RED confirmado: 31 testes iniciais falharam por POST ausente ou operações ainda não implementadas; três testes de validação (incluindo aceitação válida) também falharam. 32 casos definidos, com esqueletos tipados sem comportamento; GREEN exigido em T013.
 
 - **T010**: GREEN: 3/3 testes de validação após RED; contratos recusam campos JSON desconhecidos e exigem referência UTC explícita. Casos HTTP permanecem propositadamente pendentes até ao mapeamento em T013.
+
+- **T011**: GREEN: 6/6 testes de handler/validação. Mil códigos únicos persistidos, colisão seguida de sucesso e 32 colisões com indisponibilidade, preservando o original; SQL parametrizado e limite de tentativas verificados.
