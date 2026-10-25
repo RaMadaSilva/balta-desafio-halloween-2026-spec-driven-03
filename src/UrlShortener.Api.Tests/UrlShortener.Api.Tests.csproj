@@ -17,5 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../UrlShortener.Api/UrlShortener.Api.csproj" />
+    <None Include="../../specs/001-encurtador-links/contracts/openapi.json" Link="Contracts/openapi.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

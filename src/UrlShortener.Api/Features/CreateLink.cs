@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.ComponentModel.DataAnnotations;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -10,14 +11,18 @@ namespace UrlShortener.Api.Features;
 
 public static class CreateLink
 {
-    public sealed record Response(string Code, string ShortUrl, string Destination, DateTimeOffset? ExpiresAtUtc);
+    public sealed record LinkResponse(
+        [property: JsonRequired] string Code,
+        [property: JsonRequired, Url] string ShortUrl,
+        [property: JsonRequired, Url] string Destination,
+        [property: JsonRequired] DateTimeOffset? ExpiresAtUtc);
 
     public static RouteHandlerBuilder MapCreateLink(this IEndpointRouteBuilder endpoints) => endpoints
         .MapPost("/links", Endpoint)
         .WithName("createLink")
         .WithSummary("Criar um link curto")
-        .Accepts<Request>("application/json")
-        .Produces<Response>(201)
+        .Accepts<CreateLinkRequest>("application/json")
+        .Produces<LinkResponse>(201)
         .ProducesProblem(400)
         .ProducesProblem(409)
         .ProducesProblem(429)
@@ -25,6 +30,8 @@ public static class CreateLink
         .RequireRateLimiting("create-links")
         .AddOpenApiOperationTransformer((operation, _, _) =>
         {
+            var requestSchema = operation.RequestBody!.Content!["application/json"].Schema!;
+            requestSchema.Properties!["expiresAtUtc"] = new OpenApiSchema { Type = JsonSchemaType.String | JsonSchemaType.Null, Format = "date-time" };
             var created = (OpenApiResponse)operation.Responses!["201"];
             created.Headers ??= new Dictionary<string, IOpenApiHeader>();
             created.Headers["Location"] = new OpenApiHeader
@@ -46,10 +53,10 @@ public static class CreateLink
     {
         if (!context.Request.HasJsonContentType())
             return Results.Problem(statusCode: 400, title: "O pedido deve conter JSON.");
-        Request? request;
+        CreateLinkRequest? request;
         try
         {
-            request = await context.Request.ReadFromJsonAsync<Request>(context.RequestAborted);
+            request = await context.Request.ReadFromJsonAsync<CreateLinkRequest>(context.RequestAborted);
         }
         catch (JsonException exception)
         {
@@ -61,7 +68,7 @@ public static class CreateLink
         return outcome.Status switch
         {
             Status.Created => Results.Created($"{context.Request.PathBase}/links/{outcome.Code}/stats",
-                new Response(outcome.Code!, $"{context.Request.Scheme}://{context.Request.Host}{context.Request.PathBase}/{outcome.Code}", request.Destination, request.ExpiresAtUtc)),
+                new LinkResponse(outcome.Code!, $"{context.Request.Scheme}://{context.Request.Host}{context.Request.PathBase}/{outcome.Code}", request.Destination, request.ExpiresAtUtc)),
             Status.Invalid => Results.Problem(statusCode: 400, title: "Dados inválidos.", detail: outcome.Error),
             Status.Conflict => Results.Problem(statusCode: 409, title: "Código indisponível.", detail: outcome.Error),
             _ => Results.Problem(statusCode: 503, title: "Serviço indisponível.", detail: outcome.Error)
@@ -69,13 +76,13 @@ public static class CreateLink
     }
 
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
-    public sealed record Request(
-        [property: JsonRequired] string Destination,
-        string? Code = null,
+    public sealed record CreateLinkRequest(
+        [property: JsonRequired, Url, StringLength(2048, MinimumLength = 1)] string Destination,
+        [property: StringLength(20, MinimumLength = 4), RegularExpression("^[A-Za-z0-9]+$")] string? Code = null,
         [property: JsonConverter(typeof(UtcDateTimeOffsetConverter))] DateTimeOffset? ExpiresAtUtc = null);
     internal enum Status { Created, Invalid, Conflict, Unavailable }
     internal readonly record struct Outcome(Status Status, string? Code = null, string? Error = null);
-    internal static string? Validate(Request request, TimeProvider clock)
+    internal static string? Validate(CreateLinkRequest request, TimeProvider clock)
     {
         if (string.IsNullOrEmpty(request.Destination) || request.Destination.Length > 2048 ||
             !Uri.TryCreate(request.Destination, UriKind.Absolute, out var destination) ||
@@ -88,7 +95,7 @@ public static class CreateLink
             return "A expiração deve ser um instante futuro em UTC.";
         return null;
     }
-    internal static Outcome Handle(Request request, SqliteConnectionFactory factory, TimeProvider clock, Func<string>? generate = null)
+    internal static Outcome Handle(CreateLinkRequest request, SqliteConnectionFactory factory, TimeProvider clock, Func<string>? generate = null)
     {
         var error = Validate(request, clock);
         if (error is not null)

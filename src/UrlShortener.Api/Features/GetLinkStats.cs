@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Microsoft.Data.Sqlite;
 using Microsoft.OpenApi;
 using UrlShortener.Api.Shared;
@@ -11,7 +13,7 @@ public static class GetLinkStats
         .MapGet("/links/{code}/stats", Endpoint)
         .WithName("getLinkStats")
         .WithSummary("Consultar o total acumulado de acessos")
-        .Produces<Response>()
+        .Produces<LinkStatsResponse>()
         .ProducesProblem(404)
         .ProducesProblem(503)
         .AddOpenApiOperationTransformer((operation, _, _) =>
@@ -32,9 +34,13 @@ public static class GetLinkStats
         };
     }
 
-    public sealed record Response(string Code, long AccessCount, DateTimeOffset? ExpiresAtUtc, bool Expired);
+    public sealed record LinkStatsResponse(
+        [property: JsonRequired] string Code,
+        [property: JsonRequired, Range(0, long.MaxValue)] long AccessCount,
+        [property: JsonRequired] DateTimeOffset? ExpiresAtUtc,
+        [property: JsonRequired] bool Expired);
     internal enum Status { Found, Missing, Unavailable }
-    internal readonly record struct Outcome(Status Status, Response? Value = null);
+    internal readonly record struct Outcome(Status Status, LinkStatsResponse? Value = null);
     internal static Outcome Handle(string code, SqliteConnectionFactory factory, TimeProvider clock)
     {
         try
@@ -49,7 +55,7 @@ public static class GetLinkStats
             var expires = reader.IsDBNull(2) ? (DateTimeOffset?)null : DateTimeOffset.ParseExact(
                 reader.GetString(2), "yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture,
                 DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
-            return new(Status.Found, new Response(reader.GetString(0), reader.GetInt64(1), expires,
+            return new(Status.Found, new LinkStatsResponse(reader.GetString(0), reader.GetInt64(1), expires,
                 expires is not null && expires <= clock.GetUtcNow()));
         }
         catch (SqliteException)
