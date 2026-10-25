@@ -44,7 +44,7 @@ Cada feature fica integralmente num único ficheiro e não referencia outra feat
 
 **Objetivo**: Inicializar a solução .NET 10 e os projetos dentro de `src`
 
-- [ ] T001 Criar `src/UrlShortener.sln`, os projetos `src/UrlShortener.Api/UrlShortener.Api.csproj` e `src/UrlShortener.Api.Tests/UrlShortener.Api.Tests.csproj`, adicionar ambos à solução e referenciar a API a partir dos testes com `net10.0`.
+- [x] T001 Criar `src/UrlShortener.sln`, os projetos `src/UrlShortener.Api/UrlShortener.Api.csproj` e `src/UrlShortener.Api.Tests/UrlShortener.Api.Tests.csproj`, adicionar ambos à solução e referenciar a API a partir dos testes com `net10.0`.
 - [ ] T002 [P] Configurar em `src/UrlShortener.Api/UrlShortener.Api.csproj` os pacotes `Microsoft.Data.Sqlite` 10.0.14, `Microsoft.AspNetCore.OpenApi` 10.0.14 e `Scalar.AspNetCore` 2.18.3, com lock file de restore.
 - [ ] T003 [P] Configurar xUnit v3 e `Microsoft.AspNetCore.Mvc.Testing` 10.0.14 em `src/UrlShortener.Api.Tests/UrlShortener.Api.Tests.csproj`, com SDK Web e lock file de restore.
 
@@ -205,3 +205,7 @@ Executar T023 separadamente das outras verificações para medir desempenho sem 
 3. US2 → redirecionamento sem cache e contagem atómica.
 4. US3 → consulta pública dos totais, inclusive após expiração.
 5. Refinamento → persistência, Scalar, desempenho, quickstart e solução completa validados.
+
+## Registo de Execução
+
+- **T001**: `dotnet build src/UrlShortener.sln --configuration Release`: dois projetos compilados, zero avisos e erros; ignores .NET/SQLite e diff sem espaços finais verificados.
