@@ -8,6 +8,17 @@ namespace UrlShortener.Api.Tests;
 public sealed class StartupTests
 {
     [Fact]
+    public void FactoriesKeepTheirSqliteDataIsolated()
+    {
+        using var first = new ApiFactory();
+        using var second = new ApiFactory();
+        first.Seed("OnlyOne");
+        Assert.Equal(1, first.RowCount());
+        Assert.Equal(0, second.RowCount());
+        Assert.Null(second.ReadLink("OnlyOne"));
+    }
+
+    [Fact]
     public async Task DevelopmentStartupInitializesConfiguredDatabaseAndServesDocumentation()
     {
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".db");
