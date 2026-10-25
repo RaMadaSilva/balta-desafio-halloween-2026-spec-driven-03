@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Scalar.AspNetCore;
+using UrlShortener.Api.Features;
 using UrlShortener.Api.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,7 @@ app.UseForwardedHeaders(new ForwardedHeadersOptions
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseRateLimiter();
+app.MapCreateLink();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

@@ -84,7 +84,7 @@ validações, duplicados, distinção por maiúsculas e o 11.º pedido, sem depe
 - [x] T010 [P] [US1] Implementar contratos e validação em `src/UrlShortener.Api/Features/CreateLink.cs`: destino obrigatório, absoluto, `http`/`https` e 1–2048 caracteres; código opcional ASCII alfanumérico de 4–20 caracteres sem normalização; expiração opcional futura em UTC; erros `400` compreensíveis sem escrita (depende de T009).
 - [x] T011 [US1] Implementar o handler e SQL parametrizado em `src/UrlShortener.Api/Features/CreateLink.cs`: gerar 7 caracteres com `RandomNumberGenerator.GetInt32`, permitindo substituição local do gerador nos testes de colisão sem estado global nem endpoint de teste; inserir `access_count=0`, usar `expires_at_utc` no formato `yyyy-MM-ddTHH:mm:ss.fffffffZ`, resolver colisões automáticas em até 32 tentativas, devolver `409` para código personalizado duplicado e `503` após esgotar tentativas ou perante indisponibilidade (depende de T010).
 - [x] T012 [US1] Implementar `POST /links` em `src/UrlShortener.Api/Features/CreateLink.cs` com delegação no handler local, resposta `201` contendo `code`, `shortUrl`, `destination` e `expiresAtUtc`, cabeçalho `Location` para estatísticas, `RequireRateLimiting("create-links")` e metadados OpenAPI de `201`, `400`, `409`, `429` e `503` (depende de T011).
-- [ ] T013 [US1] Registar o mapeamento de `CreateLink` em `src/UrlShortener.Api/Program.cs` e executar os testes de `src/UrlShortener.Api.Tests/CreateLinkTests.cs` até todos passarem (depende de T012).
+- [x] T013 [US1] Registar o mapeamento de `CreateLink` em `src/UrlShortener.Api/Program.cs` e executar os testes de `src/UrlShortener.Api.Tests/CreateLinkTests.cs` até todos passarem (depende de T012).
 
 **Ponto de Verificação**: US1 cria e persiste links corretamente sem chamar `RedirectLink` ou `GetLinkStats`.
 
@@ -231,3 +231,5 @@ Executar T023 separadamente das outras verificações para medir desempenho sem 
 - **T011**: GREEN: 6/6 testes de handler/validação. Mil códigos únicos persistidos, colisão seguida de sucesso e 32 colisões com indisponibilidade, preservando o original; SQL parametrizado e limite de tentativas verificados.
 
 - **T012**: `dotnet build ... --configuration Release --no-restore` aprovado sem erros ou avisos; endpoint delega no handler, traduz estados, documenta respostas/Location/Retry-After e aplica a política. Integração HTTP validada na tarefa seguinte.
+
+- **T013**: Suite completa Release 39/39, zero falhas ou avisos. POST integrado; validação, contratos JSON, colisões, 503 e fronteiras HTTP de 60 segundos aprovados sem depender de outras features.
