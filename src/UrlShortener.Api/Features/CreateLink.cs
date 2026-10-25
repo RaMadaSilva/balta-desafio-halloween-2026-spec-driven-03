@@ -3,12 +3,71 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.Data.Sqlite;
+using Microsoft.OpenApi;
 using UrlShortener.Api.Shared;
 
 namespace UrlShortener.Api.Features;
 
 public static class CreateLink
 {
+    public sealed record Response(string Code, string ShortUrl, string Destination, DateTimeOffset? ExpiresAtUtc);
+
+    public static RouteHandlerBuilder MapCreateLink(this IEndpointRouteBuilder endpoints) => endpoints
+        .MapPost("/links", Endpoint)
+        .WithName("createLink")
+        .WithSummary("Criar um link curto")
+        .Accepts<Request>("application/json")
+        .Produces<Response>(201)
+        .ProducesProblem(400)
+        .ProducesProblem(409)
+        .ProducesProblem(429)
+        .ProducesProblem(503)
+        .RequireRateLimiting("create-links")
+        .AddOpenApiOperationTransformer((operation, _, _) =>
+        {
+            var created = (OpenApiResponse)operation.Responses!["201"];
+            created.Headers ??= new Dictionary<string, IOpenApiHeader>();
+            created.Headers["Location"] = new OpenApiHeader
+            {
+                Description = "URL relativa das estatísticas do link criado.",
+                Schema = new OpenApiSchema { Type = JsonSchemaType.String }
+            };
+            var limited = (OpenApiResponse)operation.Responses["429"];
+            limited.Headers ??= new Dictionary<string, IOpenApiHeader>();
+            limited.Headers["Retry-After"] = new OpenApiHeader
+            {
+                Description = "Segundos até libertar a permissão mais antiga, arredondados para cima.",
+                Schema = new OpenApiSchema { Type = JsonSchemaType.Integer, Minimum = "1" }
+            };
+            return Task.CompletedTask;
+        });
+
+    private static async Task<IResult> Endpoint(HttpContext context, SqliteConnectionFactory factory, TimeProvider clock)
+    {
+        if (!context.Request.HasJsonContentType())
+            return Results.Problem(statusCode: 400, title: "O pedido deve conter JSON.");
+        Request? request;
+        try
+        {
+            request = await context.Request.ReadFromJsonAsync<Request>(context.RequestAborted);
+        }
+        catch (JsonException exception)
+        {
+            return Results.Problem(statusCode: 400, title: "Pedido JSON inválido.", detail: exception.Message);
+        }
+        if (request is null)
+            return Results.Problem(statusCode: 400, title: "O corpo do pedido é obrigatório.");
+        var outcome = Handle(request, factory, clock);
+        return outcome.Status switch
+        {
+            Status.Created => Results.Created($"{context.Request.PathBase}/links/{outcome.Code}/stats",
+                new Response(outcome.Code!, $"{context.Request.Scheme}://{context.Request.Host}{context.Request.PathBase}/{outcome.Code}", request.Destination, request.ExpiresAtUtc)),
+            Status.Invalid => Results.Problem(statusCode: 400, title: "Dados inválidos.", detail: outcome.Error),
+            Status.Conflict => Results.Problem(statusCode: 409, title: "Código indisponível.", detail: outcome.Error),
+            _ => Results.Problem(statusCode: 503, title: "Serviço indisponível.", detail: outcome.Error)
+        };
+    }
+
     [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     public sealed record Request(
         [property: JsonRequired] string Destination,
