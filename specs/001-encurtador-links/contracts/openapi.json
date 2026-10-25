@@ -1,0 +1,248 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "URL Shortener API",
+    "version": "1.0.0",
+    "description": "Criação, redirecionamento e consulta de acessos de links encurtados."
+  },
+  "servers": [
+    { "url": "/" }
+  ],
+  "paths": {
+    "/links": {
+      "post": {
+        "operationId": "createLink",
+        "summary": "Criar um link curto",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateLinkRequest" },
+              "examples": {
+                "automatic": {
+                  "value": {
+                    "destination": "https://example.com/articles/a-very-long-address",
+                    "code": null,
+                    "expiresAtUtc": null
+                  }
+                },
+                "custom": {
+                  "value": {
+                    "destination": "https://example.com/promotion",
+                    "code": "Promo2026",
+                    "expiresAtUtc": "2027-01-01T00:00:00.0000000Z"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Link criado.",
+            "headers": {
+              "Location": {
+                "description": "URL relativa das estatísticas do link criado.",
+                "schema": { "type": "string" },
+                "example": "/links/Promo2026/stats"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LinkResponse" }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationProblem" },
+          "409": {
+            "description": "O código personalizado já existe.",
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            }
+          },
+          "429": {
+            "description": "Limite de 10 permissões para pedidos de criação numa janela móvel exata de 60 segundos por endereço IP excedido. Cada pedido admitido ocupa uma permissão durante 60 segundos; pedidos recusados pelo limitador não prolongam esse prazo.",
+            "headers": {
+              "Retry-After": {
+                "description": "Segundos até libertar a permissão mais antiga, arredondados para cima, com mínimo 1.",
+                "schema": { "type": "integer", "minimum": 1 }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/UnavailableProblem" }
+        }
+      }
+    },
+    "/{code}": {
+      "get": {
+        "operationId": "redirectLink",
+        "summary": "Redirecionar para o destino e contar o acesso",
+        "parameters": [
+          { "$ref": "#/components/parameters/Code" }
+        ],
+        "responses": {
+          "302": {
+            "description": "Link ativo; acesso contabilizado e destino devolvido sem cache.",
+            "headers": {
+              "Location": {
+                "required": true,
+                "schema": { "type": "string", "format": "uri" }
+              },
+              "Cache-Control": {
+                "required": true,
+                "schema": { "type": "string", "const": "no-store, no-cache" }
+              },
+              "Pragma": {
+                "required": true,
+                "schema": { "type": "string", "const": "no-cache" }
+              },
+              "Expires": {
+                "required": true,
+                "schema": { "type": "string", "const": "0" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFoundProblem" },
+          "410": {
+            "description": "O link existe, mas já expirou; o acesso não é contabilizado.",
+            "content": {
+              "application/problem+json": {
+                "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+              }
+            }
+          },
+          "503": { "$ref": "#/components/responses/UnavailableProblem" }
+        }
+      }
+    },
+    "/links/{code}/stats": {
+      "get": {
+        "operationId": "getLinkStats",
+        "summary": "Consultar o total acumulado de acessos",
+        "parameters": [
+          { "$ref": "#/components/parameters/Code" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estatísticas atuais; disponíveis também para links expirados.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/LinkStatsResponse" }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFoundProblem" },
+          "503": { "$ref": "#/components/responses/UnavailableProblem" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "Code": {
+        "name": "code",
+        "in": "path",
+        "required": true,
+        "description": "Código alfanumérico sensível a maiúsculas e minúsculas.",
+        "schema": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 20,
+          "pattern": "^[A-Za-z0-9]+$"
+        },
+        "example": "Promo2026"
+      }
+    },
+    "schemas": {
+      "CreateLinkRequest": {
+        "type": "object",
+        "required": ["destination"],
+        "additionalProperties": false,
+        "properties": {
+          "destination": {
+            "type": "string",
+            "format": "uri",
+            "minLength": 1,
+            "maxLength": 2048,
+            "description": "URL absoluta com esquema http ou https."
+          },
+          "code": {
+            "type": ["string", "null"],
+            "minLength": 4,
+            "maxLength": 20,
+            "pattern": "^[A-Za-z0-9]+$",
+            "description": "Código personalizado opcional; omitido ou null gera um código de 7 caracteres."
+          },
+          "expiresAtUtc": {
+            "type": ["string", "null"],
+            "format": "date-time",
+            "description": "Instante futuro em UTC; omitido ou null cria um link sem expiração."
+          }
+        }
+      },
+      "LinkResponse": {
+        "type": "object",
+        "required": ["code", "shortUrl", "destination", "expiresAtUtc"],
+        "properties": {
+          "code": { "type": "string" },
+          "shortUrl": { "type": "string", "format": "uri" },
+          "destination": { "type": "string", "format": "uri" },
+          "expiresAtUtc": { "type": ["string", "null"], "format": "date-time" }
+        }
+      },
+      "LinkStatsResponse": {
+        "type": "object",
+        "required": ["code", "accessCount", "expiresAtUtc", "expired"],
+        "properties": {
+          "code": { "type": "string" },
+          "accessCount": { "type": "integer", "format": "int64", "minimum": 0 },
+          "expiresAtUtc": { "type": ["string", "null"], "format": "date-time" },
+          "expired": { "type": "boolean" }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": { "type": ["string", "null"] },
+          "title": { "type": ["string", "null"] },
+          "status": { "type": ["integer", "null"], "format": "int32" },
+          "detail": { "type": ["string", "null"] },
+          "instance": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "responses": {
+      "ValidationProblem": {
+        "description": "Dados inválidos; nenhum link foi criado ou alterado.",
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+          }
+        }
+      },
+      "NotFoundProblem": {
+        "description": "O código não existe; nenhum contador foi alterado.",
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+          }
+        }
+      },
+      "UnavailableProblem": {
+        "description": "Não foi possível concluir a operação; pode ser tentada novamente mais tarde.",
+        "content": {
+          "application/problem+json": {
+            "schema": { "$ref": "#/components/schemas/ProblemDetails" }
+          }
+        }
+      }
+    }
+  }
+}
