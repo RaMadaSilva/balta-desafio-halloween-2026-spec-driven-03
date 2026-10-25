@@ -23,6 +23,7 @@ app.UseStatusCodePages();
 app.UseRateLimiter();
 app.MapCreateLink();
 app.MapRedirectLink();
+app.MapGetLinkStats();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

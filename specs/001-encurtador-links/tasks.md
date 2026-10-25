@@ -129,7 +129,7 @@ verificar zero, valores acumulados, expirados, códigos desconhecidos e ausênci
 ### Implementação da História de Utilizador 3
 
 - [x] T019 [P] [US3] Implementar o handler em `src/UrlShortener.Api/Features/GetLinkStats.cs` com `SELECT` parametrizado por `code COLLATE BINARY`, leitura de `access_count` e `expires_at_utc`, cálculo de `expired` no instante UTC atual, sem condição de atividade e sem qualquer escrita (depende de T018).
-- [ ] T020 [US3] Implementar `GET /links/{code}/stats` em `src/UrlShortener.Api/Features/GetLinkStats.cs`, registar o mapeamento em `src/UrlShortener.Api/Program.cs`, devolver `200` ou Problem Details `404`/`503` com metadados OpenAPI e executar `src/UrlShortener.Api.Tests/GetLinkStatsTests.cs` até todos passarem (depende de T019).
+- [x] T020 [US3] Implementar `GET /links/{code}/stats` em `src/UrlShortener.Api/Features/GetLinkStats.cs`, registar o mapeamento em `src/UrlShortener.Api/Program.cs`, devolver `200` ou Problem Details `404`/`503` com metadados OpenAPI e executar `src/UrlShortener.Api.Tests/GetLinkStatsTests.cs` até todos passarem (depende de T019).
 
 **Ponto de Verificação**: US3 consulta totais sem depender de implementações de US1/US2 e sem alterar dados.
 
@@ -245,3 +245,5 @@ Executar T023 separadamente das outras verificações para medir desempenho sem 
 - **T018**: RED confirmado nos 7 casos antes da implementação: consulta HTTP ausente e handler por implementar. Cobertos zero/totais conhecidos, expiração, maiúsculas, inexistência, 503 e preservação integral dos dados.
 
 - **T019**: GREEN: 2/2 testes do handler após RED. SELECT parametrizado distingue códigos por maiúsculas e disponibiliza totais de links expirados, sem qualquer comando de escrita.
+
+- **T020**: Suite completa Release 56/56. Consulta 200/404/503, zero/totais conhecidos e links expirados preservados; nenhuma referência entre implementações de features.
