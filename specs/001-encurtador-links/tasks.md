@@ -124,7 +124,7 @@ verificar zero, valores acumulados, expirados, códigos desconhecidos e ausênci
 
 > **NOTA: Escrever estes testes primeiro e confirmar que falham antes de T019**
 
-- [ ] T018 [P] [US3] Escrever em `src/UrlShortener.Api.Tests/GetLinkStatsTests.cs` testes de `200` com total zero e valores conhecidos, consulta após expiração com `expired: true`, preservação do total, `404` para código desconhecido, distinção por maiúsculas e resposta com `code`, `accessCount`, `expiresAtUtc` e `expired`; simular indisponibilidade de ligação antes da leitura e verificar `503` em Problem Details e dados inalterados após recuperação.
+- [x] T018 [P] [US3] Escrever em `src/UrlShortener.Api.Tests/GetLinkStatsTests.cs` testes de `200` com total zero e valores conhecidos, consulta após expiração com `expired: true`, preservação do total, `404` para código desconhecido, distinção por maiúsculas e resposta com `code`, `accessCount`, `expiresAtUtc` e `expired`; simular indisponibilidade de ligação antes da leitura e verificar `503` em Problem Details e dados inalterados após recuperação.
 
 ### Implementação da História de Utilizador 3
 
@@ -241,3 +241,5 @@ Executar T023 separadamente das outras verificações para medir desempenho sem 
 - **T016**: Build Release aprovado sem avisos/erros. Endpoint traduz resultados do handler, define cache/Location e documenta 302/404/410/503; URLs Unicode são codificadas para o cabeçalho HTTP. Testes de integração na tarefa seguinte.
 
 - **T017**: Suite completa Release 49/49. Mil acessos concorrentes contabilizados exatamente, 302 sem cache, expiração sem incremento, código scalar e destinos Unicode aprovados; sem dependências entre slices.
+
+- **T018**: RED confirmado nos 7 casos antes da implementação: consulta HTTP ausente e handler por implementar. Cobertos zero/totais conhecidos, expiração, maiúsculas, inexistência, 503 e preservação integral dos dados.
