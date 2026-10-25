@@ -139,7 +139,7 @@ verificar zero, valores acumulados, expirados, códigos desconhecidos e ausênci
 
 **Objetivo**: Validar persistência, documentação, desempenho, arquitetura e a solução completa
 
-- [ ] T021 [P] Escrever e executar em `src/UrlShortener.Api.Tests/PersistenceTests.cs` testes que recriam a aplicação sobre a mesma base e comprovam preservação de código, destino, expiração e total, além da continuação do redirecionamento e da contagem.
+- [x] T021 [P] Escrever e executar em `src/UrlShortener.Api.Tests/PersistenceTests.cs` testes que recriam a aplicação sobre a mesma base e comprovam preservação de código, destino, expiração e total, além da continuação do redirecionamento e da contagem.
 - [ ] T022 [P] Escrever e executar em `src/UrlShortener.Api.Tests/ApiDocumentationTests.cs` testes de `/openapi/v1.json` e `/docs/scalar`, verificando as três operações, esquemas, respostas e cabeçalhos definidos em `specs/001-encurtador-links/contracts/openapi.json`, incluindo `503` em todos os endpoints e a separação entre a documentação e o código `scalar`.
 - [ ] T023 Escrever e executar em `src/UrlShortener.Api.Tests/PerformanceTests.cs` o protocolo de `specs/001-encurtador-links/quickstart.md`: Release sem depurador, relógio real, registo de SDK/sistema operativo/CPU/memória, aquecimento excluído, 100 criações válidas distribuídas por dez IPs de teste distintos com dez pedidos por IP, 1000 redirecionamentos com concorrência máxima de 50 e contador iniciado em zero; medir cada pedido completo, calcular o percentil 95 pela posição `ceil(0,95 * N)` da amostra ordenada, exigir criação até 2 segundos e redirecionamento até 1 segundo, todas as respostas esperadas e total exatamente 1000; não excluir falhas nem desativar o limitador e executar estes ensaios sem outras classes de testes em paralelo.
 - [ ] T024 Executar todos os cenários manuais de `specs/001-encurtador-links/quickstart.md`, registar e corrigir divergências de comportamento sem alterar os critérios da especificação (depende de T021, T022 e T023).
@@ -247,3 +247,5 @@ Executar T023 separadamente das outras verificações para medir desempenho sem 
 - **T019**: GREEN: 2/2 testes do handler após RED. SELECT parametrizado distingue códigos por maiúsculas e disponibiliza totais de links expirados, sem qualquer comando de escrita.
 
 - **T020**: Suite completa Release 56/56. Consulta 200/404/503, zero/totais conhecidos e links expirados preservados; nenhuma referência entre implementações de features.
+
+- **T021**: Suite Release 60/60. Reinício preserva todos os campos em links sem expiração/ativos/expirados; limite de criação não afeta GETs. Uma execução paralela gerou 503 no ensaio de carga; isolado passou. Classes agora sequenciais, mantendo 50 pedidos concorrentes dentro do ensaio e sem alterar o código da API.

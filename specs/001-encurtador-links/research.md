@@ -173,6 +173,10 @@ a ser confiáveis em produção.
 contagem e respostas de erro sem depender de um destino externo. Cada factory usa uma base de dados
 isolada.
 
+As classes de testes correm sequencialmente para não sobrepor ensaios de escrita em disco e distorcer
+a carga aplicada ao SQLite. Os testes de concorrência mantêm o seu paralelismo explícito de até
+50 pedidos; esta configuração não serializa pedidos na aplicação.
+
 **Alternativas consideradas**: Testar apenas handlers não validaria middleware, rotas ou OpenAPI;
 testes que seguem redirecionamentos esconderiam o contrato `302` e poderiam contactar destinos externos.
 
