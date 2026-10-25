@@ -46,7 +46,7 @@ Cada feature fica integralmente num único ficheiro e não referencia outra feat
 
 - [x] T001 Criar `src/UrlShortener.sln`, os projetos `src/UrlShortener.Api/UrlShortener.Api.csproj` e `src/UrlShortener.Api.Tests/UrlShortener.Api.Tests.csproj`, adicionar ambos à solução e referenciar a API a partir dos testes com `net10.0`.
 - [x] T002 [P] Configurar em `src/UrlShortener.Api/UrlShortener.Api.csproj` os pacotes `Microsoft.Data.Sqlite` 10.0.14, `Microsoft.AspNetCore.OpenApi` 10.0.14 e `Scalar.AspNetCore` 2.18.3, com lock file de restore.
-- [ ] T003 [P] Configurar xUnit v3 e `Microsoft.AspNetCore.Mvc.Testing` 10.0.14 em `src/UrlShortener.Api.Tests/UrlShortener.Api.Tests.csproj`, com SDK Web e lock file de restore.
+- [x] T003 [P] Configurar xUnit v3 e `Microsoft.AspNetCore.Mvc.Testing` 10.0.14 em `src/UrlShortener.Api.Tests/UrlShortener.Api.Tests.csproj`, com SDK Web e lock file de restore.
 
 ---
 
@@ -211,3 +211,5 @@ Executar T023 separadamente das outras verificações para medir desempenho sem 
 - **T001**: `dotnet build src/UrlShortener.sln --configuration Release`: dois projetos compilados, zero avisos e erros; ignores .NET/SQLite e diff sem espaços finais verificados.
 
 - **T002**: `dotnet restore` e `dotnet build ... --configuration Release --no-restore` aprovados; lock confirma Microsoft.Data.Sqlite/OpenApi 10.0.14 e Scalar 2.18.3, sem desvios; finais de linha normalizados por .gitattributes.
+
+- **T003**: `dotnet test src/UrlShortener.sln --configuration Release --no-restore` compila ambos os projetos e inicia VSTest; zero testes nesta fase. xUnit v3 4.0.2 com pacote mtp-off preserva o comando previsto; cache NuGet indicado por variável de processo no sandbox.
