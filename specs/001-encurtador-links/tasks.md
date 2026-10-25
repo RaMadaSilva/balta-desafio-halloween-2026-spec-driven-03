@@ -101,7 +101,7 @@ os contadores nas fixtures; validar ativo, expirado, inexistente, cache e concor
 
 > **NOTA: Escrever estes testes primeiro e confirmar que falham antes de T015**
 
-- [ ] T014 [P] [US2] Escrever em `src/UrlShortener.Api.Tests/RedirectLinkTests.cs` testes de `302` e `Location`, incremento único em links com e sem expiração, `410` no instante da expiração sem incremento usando relógio controlado, `404` sem alterações, cabeçalhos `Cache-Control: no-store, no-cache`, `Pragma: no-cache` e `Expires: 0`, distinção por maiúsculas e exatamente 1000 acessos contabilizados em pedidos concorrentes; verificar que o código personalizado `scalar` redireciona e contabiliza também em desenvolvimento; simular indisponibilidade de ligação antes da escrita e verificar `503` em Problem Details, ausência de `Location` e contador inalterado após recuperação.
+- [x] T014 [P] [US2] Escrever em `src/UrlShortener.Api.Tests/RedirectLinkTests.cs` testes de `302` e `Location`, incremento único em links com e sem expiração, `410` no instante da expiração sem incremento usando relógio controlado, `404` sem alterações, cabeçalhos `Cache-Control: no-store, no-cache`, `Pragma: no-cache` e `Expires: 0`, distinção por maiúsculas e exatamente 1000 acessos contabilizados em pedidos concorrentes; verificar que o código personalizado `scalar` redireciona e contabiliza também em desenvolvimento; simular indisponibilidade de ligação antes da escrita e verificar `503` em Problem Details, ausência de `Location` e contador inalterado após recuperação.
 
 ### Implementação da História de Utilizador 2
 
@@ -233,3 +233,5 @@ Executar T023 separadamente das outras verificações para medir desempenho sem 
 - **T012**: `dotnet build ... --configuration Release --no-restore` aprovado sem erros ou avisos; endpoint delega no handler, traduz estados, documenta respostas/Location/Retry-After e aplica a política. Integração HTTP validada na tarefa seguinte.
 
 - **T013**: Suite completa Release 39/39, zero falhas ou avisos. POST integrado; validação, contratos JSON, colisões, 503 e fronteiras HTTP de 60 segundos aprovados sem depender de outras features.
+
+- **T014**: RED confirmado nos 10 casos: GET ainda ausente e handler tipado por implementar. Cobertos cache, expiração exata, códigos distintos/scalar, Unicode, 503 e 1000 acessos concorrentes com limite de 50 pedidos simultâneos.
