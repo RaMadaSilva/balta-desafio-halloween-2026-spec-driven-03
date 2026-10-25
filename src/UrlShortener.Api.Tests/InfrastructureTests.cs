@@ -1,0 +1,42 @@
+using Microsoft.Data.Sqlite;
+using UrlShortener.Api.Shared;
+
+namespace UrlShortener.Api.Tests;
+
+public sealed class InfrastructureTests
+{
+    [Fact]
+    public void ConnectionFactoryRejectsMissingConfiguration()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+        Assert.Throws<InvalidOperationException>(() => new SqliteConnectionFactory(configuration, Path.GetTempPath()));
+    }
+
+    [Fact]
+    public void ConnectionFactoryOpensIndependentConnectionsWithRequiredSettings()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        try
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ConnectionStrings:Links"] = "Data Source=links.db"
+            }).Build();
+            var factory = new SqliteConnectionFactory(configuration, folder);
+            using var first = factory.OpenConnection();
+            using var second = factory.OpenConnection();
+            Assert.NotSame(first, second);
+            Assert.Equal(Path.Combine(folder, "links.db"), first.DataSource);
+            Assert.Equal(5, first.DefaultTimeout);
+            using var command = first.CreateCommand();
+            command.CommandText = "PRAGMA foreign_keys";
+            Assert.Equal(1L, command.ExecuteScalar());
+            SqliteConnection.ClearPool(first);
+        }
+        finally
+        {
+            Directory.Delete(folder, true);
+        }
+    }
+}
