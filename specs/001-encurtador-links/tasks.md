@@ -106,7 +106,7 @@ os contadores nas fixtures; validar ativo, expirado, inexistente, cache e concor
 ### Implementação da História de Utilizador 2
 
 - [x] T015 [P] [US2] Implementar o handler em `src/UrlShortener.Api/Features/RedirectLink.cs` com um único `UPDATE links SET access_count = access_count + 1` parametrizado, condição `expires_at_utc IS NULL OR expires_at_utc > $now_utc`, `COLLATE BINARY`, formato UTC fixo, instante obtido por `TimeProvider` substituível nos testes e `RETURNING destination`; sem transação explícita e com leitura posterior apenas para distinguir `404` de `410` (depende de T014).
-- [ ] T016 [US2] Implementar `GET /{code}` em `src/UrlShortener.Api/Features/RedirectLink.cs` com delegação no handler local, `302` apenas após incremento, `Location`, `Cache-Control: no-store, no-cache`, `Pragma: no-cache`, `Expires: 0`, Problem Details para `404`, `410` e `503`, sem autenticação e com metadados OpenAPI (depende de T015).
+- [x] T016 [US2] Implementar `GET /{code}` em `src/UrlShortener.Api/Features/RedirectLink.cs` com delegação no handler local, `302` apenas após incremento, `Location`, `Cache-Control: no-store, no-cache`, `Pragma: no-cache`, `Expires: 0`, Problem Details para `404`, `410` e `503`, sem autenticação e com metadados OpenAPI (depende de T015).
 - [ ] T017 [US2] Registar o mapeamento de `RedirectLink` em `src/UrlShortener.Api/Program.cs` e executar os testes de `src/UrlShortener.Api.Tests/RedirectLinkTests.cs` até todos passarem (depende de T016).
 
 **Ponto de Verificação**: US2 redireciona e conta acessos concorrentes sem importar tipos de US1/US3.
@@ -237,3 +237,5 @@ Executar T023 separadamente das outras verificações para medir desempenho sem 
 - **T014**: RED confirmado nos 10 casos: GET ainda ausente e handler tipado por implementar. Cobertos cache, expiração exata, códigos distintos/scalar, Unicode, 503 e 1000 acessos concorrentes com limite de 50 pedidos simultâneos.
 
 - **T015**: GREEN: 3/3 cenários do handler após RED. UPDATE parametrizado com RETURNING incrementa só links ativos; leitura posterior distingue expirados/inexistentes sem alterar contadores.
+
+- **T016**: Build Release aprovado sem avisos/erros. Endpoint traduz resultados do handler, define cache/Location e documenta 302/404/410/503; URLs Unicode são codificadas para o cabeçalho HTTP. Testes de integração na tarefa seguinte.
