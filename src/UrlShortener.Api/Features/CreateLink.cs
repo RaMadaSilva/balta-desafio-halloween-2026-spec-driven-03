@@ -104,8 +104,13 @@ public static class CreateLink
         try
         {
             using var connection = factory.OpenConnection();
+            connection.CreateFunction("utc_now", () => clock.GetUtcNow().ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture), isDeterministic: false);
             using var command = connection.CreateCommand();
-            command.CommandText = "INSERT INTO links(code, destination, expires_at_utc, access_count) VALUES ($code, $destination, $expires, 0)";
+            command.CommandText = """
+                INSERT INTO links(code, destination, expires_at_utc, access_count)
+                SELECT $code, $destination, $expires, 0
+                WHERE $expires IS NULL OR $expires > utc_now();
+                """;
             var codeParameter = command.Parameters.AddWithValue("$code", "");
             command.Parameters.AddWithValue("$destination", request.Destination);
             command.Parameters.AddWithValue("$expires", (object?)request.ExpiresAtUtc?.ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture) ?? DBNull.Value);
@@ -115,7 +120,8 @@ public static class CreateLink
                 codeParameter.Value = code;
                 try
                 {
-                    command.ExecuteNonQuery();
+                    if (command.ExecuteNonQuery() == 0)
+                        return new(Status.Invalid, Error: "A expiração deve ser um instante futuro em UTC.");
                     return new(Status.Created, code);
                 }
                 catch (SqliteException exception) when (exception.SqliteErrorCode == 19 && exception.SqliteExtendedErrorCode is 1555 or 2067)
@@ -147,7 +153,7 @@ public static class CreateLink
                 throw new JsonException("A expiração deve ser uma data em UTC.");
             var text = reader.GetString()!;
             if (!(text.EndsWith('Z') || text.EndsWith("+00:00", StringComparison.Ordinal)) ||
-                !DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.None, out var value) || value.Offset != TimeSpan.Zero)
+                !reader.TryGetDateTimeOffset(out var value) || value.Offset != TimeSpan.Zero)
                 throw new JsonException("A expiração deve indicar explicitamente UTC.");
             return value;
         }

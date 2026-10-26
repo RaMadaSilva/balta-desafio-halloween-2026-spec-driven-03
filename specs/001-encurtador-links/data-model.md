@@ -33,8 +33,10 @@ obrigatoriamente nos slices; os `CHECK`s não substituem mensagens compreensíve
 ## Formato Temporal
 
 `expires_at_utc` usa texto ISO-8601 UTC com formato invariante e precisão fixa de sete casas
-fracionárias: `yyyy-MM-ddTHH:mm:ss.fffffffZ`. O parâmetro `$now_utc` usa exatamente o mesmo formato,
-permitindo comparações lexicográficas equivalentes à ordem cronológica.
+fracionárias: `yyyy-MM-ddTHH:mm:ss.fffffffZ`. A função SQL local `utc_now()` lê o `TimeProvider`
+no mesmo formato durante a execução da escrita, depois de obter o bloqueio de escritor. Assim,
+a espera pelo SQLite não conserva um instante anterior à expiração. As comparações lexicográficas
+equivalem à ordem cronológica. O contrato JSON aceita datas ISO-8601 com UTC explícito.
 
 ## Estados e Transições
 
@@ -56,6 +58,8 @@ Um código sem linha na tabela produz `404`, não cria dados e não altera conta
 ## Invariantes de Escrita
 
 - A criação valida todos os dados antes do `INSERT` parametrizado.
+- O `INSERT ... SELECT ... WHERE` volta a exigir expiração futura usando `utc_now()`; se o prazo
+  terminar durante uma espera de escrita, devolve `400` sem inserir.
 - A unicidade é imposta pelo `INSERT`; não se usa uma verificação prévia como garantia contra corridas.
 - Códigos automáticos colididos são regenerados até 32 tentativas; códigos personalizados duplicados
   produzem `409`.
@@ -66,7 +70,7 @@ Um código sem linha na tabela produz `404`, não cria dados e não altera conta
 UPDATE links
 SET access_count = access_count + 1
 WHERE code = $code COLLATE BINARY
-  AND (expires_at_utc IS NULL OR expires_at_utc > $now_utc)
+  AND (expires_at_utc IS NULL OR expires_at_utc > utc_now())
 RETURNING destination;
 ```
 

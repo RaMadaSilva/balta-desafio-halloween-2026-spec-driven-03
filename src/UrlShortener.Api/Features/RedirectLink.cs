@@ -62,15 +62,15 @@ public static class RedirectLink
         try
         {
             using var connection = factory.OpenConnection();
+            connection.CreateFunction("utc_now", () => clock.GetUtcNow().ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture), isDeterministic: false);
             using var update = connection.CreateCommand();
             update.CommandText = """
                 UPDATE links SET access_count = access_count + 1
                 WHERE code = $code COLLATE BINARY
-                  AND (expires_at_utc IS NULL OR expires_at_utc > $now_utc)
+                  AND (expires_at_utc IS NULL OR expires_at_utc > utc_now())
                 RETURNING destination;
                 """;
             update.Parameters.AddWithValue("$code", code);
-            update.Parameters.AddWithValue("$now_utc", clock.GetUtcNow().ToString("yyyy-MM-ddTHH:mm:ss.fffffffZ", CultureInfo.InvariantCulture));
             if (update.ExecuteScalar() is string destination)
                 return new(Status.Redirected, destination);
 

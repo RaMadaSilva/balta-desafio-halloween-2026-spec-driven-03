@@ -103,6 +103,7 @@ public sealed class CreateLinkTests
     [InlineData("2026-10-25T12:00:00Z")]
     [InlineData("2027-01-01T00:00:00+01:00")]
     [InlineData("2027-01-01T00:00:00")]
+    [InlineData("01/02/2027 00:00:00+00:00")]
     public async Task InvalidExpirationIsRejected(string expiresAtUtc)
     {
         using var factory = new ApiFactory();

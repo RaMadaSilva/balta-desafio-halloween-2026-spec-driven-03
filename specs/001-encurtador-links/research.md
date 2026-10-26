@@ -23,6 +23,13 @@ Fontes: [Microsoft.Data.Sqlite](https://www.nuget.org/packages/Microsoft.Data.Sq
 e restrições `CHECK` como defesa adicional. Guardar a expiração como texto ISO-8601 UTC de formato e
 precisão fixos.
 
+O JSON aceita apenas datas ISO-8601 com UTC explícito, usando o leitor de datas de `System.Text.Json`.
+Nos dois slices de escrita, uma função SQL local não determinística `utc_now()` consulta o
+`TimeProvider` durante a instrução. A criação usa `INSERT ... SELECT ... WHERE` para revalidar a
+expiração e o redirecionamento usa essa função na condição do `UPDATE`. Um instante capturado antes
+de aguardar pelo escritor poderia aceitar um link entretanto expirado. Dois testes com escritor
+bloqueado e relógio controlado reproduzem esta corrida e confirmam ausência de inserção/incremento.
+
 **Rationale**: A chave primária torna a base de dados a autoridade final sobre unicidade. `BINARY`
 preserva a distinção entre maiúsculas e minúsculas. Formato UTC uniforme permite comparações
 cronológicas consistentes no SQLite, que não tem tipo nativo de data.

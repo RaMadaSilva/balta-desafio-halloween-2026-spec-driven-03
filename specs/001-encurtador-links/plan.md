@@ -125,6 +125,9 @@ SQL próprios. `Shared` centraliza somente infraestrutura independente das featu
 
 - `POST /links` valida destino, código e expiração UTC; gera códigos com
   `RandomNumberGenerator.GetInt32`; aplica unicidade no `INSERT`; devolve `201`, `400`, `409` ou `503`.
+  O JSON exige ISO-8601 com UTC explícito. Uma função SQL local `utc_now()` lê o `TimeProvider`
+  durante a escrita; criação e redirecionamento revalidam a expiração depois da espera pelo escritor,
+  evitando aceitar um prazo já terminado. A criação usa `INSERT ... SELECT ... WHERE`.
   Uma política com registo monotónico de até dez instantes por IP aplica uma janela móvel exata de
   60 segundos, com decisão atómica, `TimeProvider` substituível e fila zero. Instantes com idade maior
   ou igual a 60 segundos são removidos antes de admitir um pedido; excesso devolve `429` e

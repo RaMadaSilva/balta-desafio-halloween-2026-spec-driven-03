@@ -17,6 +17,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     public string DatabasePath { get; }
     public TimeProvider Clock { get; }
     public bool FailConnections { get; set; }
+    public Action? ConnectionOpened { get; set; }
 
     public ApiFactory(string? databasePath = null, TimeProvider? clock = null)
     {
@@ -41,7 +42,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
             services.RemoveAll<SqliteConnectionFactory>();
             services.AddSingleton<SqliteConnectionFactory>(provider => new FailingConnectionFactory(
                 provider.GetRequiredService<IConfiguration>(), provider.GetRequiredService<IHostEnvironment>().ContentRootPath,
-                () => FailConnections, value => poolConnectionString = value));
+                () => FailConnections, value => { poolConnectionString = value; ConnectionOpened?.Invoke(); }));
             services.AddSingleton<IStartupFilter, TestAddressFilter>();
         });
     }
