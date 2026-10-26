@@ -10,7 +10,26 @@ Aqui você vai encontrar projetos, exercícios e códigos que estou desenvolvend
 Neste desafio o objetivo é criar um encurtador de URLs completo utilizando os conceitos de Spec-Driven Development via SpecKit
 
 #### O que foi implementado
-- [Listar detalhes da implementação]
+- API .NET 10 com criação de links automáticos ou personalizados e expiração UTC opcional.
+- Redirecionamento com contagem atómica, estatísticas públicas e persistência SQLite em WAL.
+- Limite de dez criações por IP numa janela móvel de 60 segundos.
+- OpenAPI e Scalar em desenvolvimento, com testes de contrato, concorrência e desempenho.
+
+### Executar e validar
+
+Requer SDK .NET 10. Na raiz do repositório:
+
+```powershell
+dotnet restore src/UrlShortener.sln --locked-mode
+dotnet build src/UrlShortener.sln --configuration Release --no-restore
+dotnet test src/UrlShortener.sln --configuration Release --no-build
+dotnet run --project src/UrlShortener.Api --no-launch-profile -- --environment Development --urls http://localhost:5080
+```
+
+A documentação interativa está em `http://localhost:5080/docs/scalar`.
+A base inicial é `src/UrlShortener.Api/links.db`; a variável `ConnectionStrings__Links`
+permite escolher outro ficheiro. Os cenários e critérios de validação estão no
+[guia de validação](specs/001-encurtador-links/quickstart.md).
 
 Neste processo eu aprendi:
 * ✅
