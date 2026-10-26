@@ -18,5 +18,6 @@
   <ItemGroup>
     <ProjectReference Include="../UrlShortener.Api/UrlShortener.Api.csproj" />
     <None Include="../../specs/001-encurtador-links/contracts/openapi.json" Link="Contracts/openapi.json" CopyToOutputDirectory="PreserveNewest" />
+    <AssemblyMetadata Include="SdkVersion" Value="$(NETCoreSdkVersion)" />
   </ItemGroup>
 </Project>
