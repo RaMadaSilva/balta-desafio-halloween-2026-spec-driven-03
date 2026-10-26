@@ -4,7 +4,7 @@
 
 **Criada em**: 2026-10-25
 
-**Estado**: Rascunho
+**Estado**: Implementada e validada em 2026-10-26
 
 **Entrada**: Descrição do utilizador: "Encurtador de Link: o criador informa uma URL longa e recebe um link curto para partilhar. Quem clica no link curto é redirecionado ao destino e cada acesso é contabilizado. O criador consegue consultar quantos acessos o seu link recebeu. O código pode ser automático ou personalizado, é único e pode ter expiração. Links expirados não redirecionam nem contam acessos. O contador nunca diminui e os links continuam válidos após o reinício da aplicação. Cadastro e login de utilizadores, domínio personalizado, relatórios geográficos e edição do destino estão fora do âmbito."
 
